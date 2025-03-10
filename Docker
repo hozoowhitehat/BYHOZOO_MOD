@@ -1,0 +1,44 @@
+# Ubuntu XFCE dengan wallpaper anime, ikon Windows 10, noVNC (port 8080) & sound support
+FROM ubuntu:latest
+
+# Update dan install dependensi dasar
+RUN apt update && apt upgrade -y && \
+    apt install -y xfce4 xfce4-goodies x11vnc xvfb novnc websockify \
+    wget sudo pulseaudio alsa-utils \
+    gnome-games gdebi gedit gimp inkscape kdenlive krita lollypop obs-studio thunderbird vim \
+    blender \
+    && apt clean
+
+# Tambah user root dengan password hozoo
+RUN useradd -m -s /bin/bash hozoo && echo "hozoo:hozoo" | chpasswd
+
+# Download wallpaper anime
+RUN wget -O /usr/share/backgrounds/anime-wallpaper.jpg \
+    https://c4.wallpaperflare.com/wallpaper/702/677/218/anime-anime-girls-sword-red-fan-art-hd-wallpaper-preview.jpg
+
+# Set wallpaper default
+RUN echo "xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s /usr/share/backgrounds/anime-wallpaper.jpg" > /etc/profile.d/set-wallpaper.sh
+
+# Install ikon Windows 10
+RUN wget -O win10-icon.tar.gz https://github.com/Elbullazul/Windows-10/releases/download/v1.0/Windows-10.tar.gz && \
+    tar -xzf win10-icon.tar.gz -C /usr/share/icons && \
+    rm win10-icon.tar.gz
+
+# Fix Firefox dan LibreOffice
+RUN wget https://raw.githubusercontent.com/wahasa/Ubuntu/main/Apps/firefoxfix.sh -O /firefoxfix.sh && chmod +x /firefoxfix.sh && /firefoxfix.sh
+RUN wget https://raw.githubusercontent.com/wahasa/Ubuntu/main/Apps/libreofficefix.sh -O /libreofficefix.sh && chmod +x /libreofficefix.sh && /libreofficefix.sh
+
+# Install VSCode dan fix
+RUN wget https://raw.githubusercontent.com/wahasa/Ubuntu/main/Apps/vscodefix.sh -O /vscodefix.sh && chmod +x /vscodefix.sh && /vscodefix.sh
+
+# Setup noVNC dengan audio support
+RUN mkdir -p /root/.vnc && echo "hozoo" | vncpasswd -f > /root/.vnc/passwd && chmod 600 /root/.vnc/passwd
+
+# Setup noVNC script
+COPY start-vnc.sh /start-vnc.sh
+RUN chmod +x /start-vnc.sh
+
+# Expose port noVNC
+EXPOSE 8080
+
+CMD ["/start-vnc.sh"]
